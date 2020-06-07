@@ -1,26 +1,15 @@
 # pytorch-AdaIN
 
-This is an unofficial pytorch implementation of a paper, Arbitrary Style Transfer in Real-time with Adaptive Instance Normalization [Huang+, ICCV2017].
-I'm really grateful to the [original implementation](https://github.com/xunhuang1995/AdaIN-style) in Torch by the authors, which is very useful.
-
-![Results](results.png)
-
-## Requirements
-Please install requirements by `pip install -r requirements.txt`
-
-- Python 3.5+
-- PyTorch 0.4+
-- TorchVision
-- Pillow
-
-(optional, for training)
-- tqdm
-- TensorboardX
-
 ## Usage
 
-### Download models
+### Download models (Already downloaded)
 Download [vgg_normalized.pth](https://drive.google.com/open?id=108uza-dsmwvbW2zv-G73jtVcMU_2Nb7Y)/[decoder.pth](https://drive.google.com/open?id=1w9r1NoYnn7tql1VYG3qDUzkbIks24RBQ) and put them under `models/`.
+
+### Webcam
+
+```bash
+python webcam.py
+```
 
 ### Test
 Use `--content` and `--style` to provide the respective path to the content and style image.
