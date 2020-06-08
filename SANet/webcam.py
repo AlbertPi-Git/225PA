@@ -9,9 +9,7 @@ import model
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--style', type=str,
-                    help='File path to the style image, or multiple style \
-                    images separated by commas if you want to do style \
-                    interpolation or spatial control')
+                    help='File path to the style image')
 
 args= parser.parse_args()
 
@@ -73,6 +71,7 @@ def webcam(style_path, width=1280, height=720):
 
     # Load style image
     style_img= cv2.imread(style_path)
+    style_img=cv2.resize(style_img,(int(style_img.shape[1]/style_img.shape[0]*400),400))
     style_tensor=itot(style_img)
 
     # Set webcam settings

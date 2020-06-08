@@ -12,8 +12,14 @@ import numpy as np
 # Device
 device = ("cuda" if torch.cuda.is_available() else "cpu")
 
-STYLE_PATH = "input/style/mosaic.jpg"
-PRESERVE_COLOR = False
+parser = argparse.ArgumentParser()
+parser.add_argument('--style', type=str,
+                    help='File path to the style image')
+parser.add_argument('--ratio', type=float, default=0.5,
+                    help='Style ratio')
+
+args= parser.parse_args()
+
 WIDTH = 1280
 HEIGHT = 720
 
@@ -33,7 +39,7 @@ def ttoi(tensor):
     img = img.transpose(1, 2, 0)
     return img
 
-def style_transfer(vgg, decoder, content, style, alpha=1.0,
+def style_transfer(vgg, decoder, content, style, alpha,
                    interpolation_weights=None):
     
     assert (0.0 <= alpha <= 1.0)
@@ -103,7 +109,7 @@ def webcam(style_path, width=1280, height=720):
             content_tensor = itot(content_img)
 
             with torch.no_grad():
-                generated_tensor = style_transfer(vgg, decoder, content_tensor, style_tensor,alpha=0.6)
+                generated_tensor = style_transfer(vgg, decoder, content_tensor, style_tensor,alpha=args.ratio)
 
             generated_img = ttoi(generated_tensor.detach())
             generated_img = generated_img / 255
@@ -127,5 +133,5 @@ def webcam(style_path, width=1280, height=720):
     cam.release()
     cv2.destroyAllWindows()
 
-webcam(STYLE_PATH, WIDTH, HEIGHT)
+webcam(args.style, WIDTH, HEIGHT)
 

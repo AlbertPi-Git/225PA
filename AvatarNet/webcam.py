@@ -7,10 +7,17 @@ import time
 import numpy as np
 from network import AvatarNet
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--style', type=str,
+                    help='File path to the style image')
+parser.add_argument('--ratio', type=float, default=0.5,
+                    help='Style ratio')
+
+args= parser.parse_args()
+
 # Device
 device = ("cuda" if torch.cuda.is_available() else "cpu")
 
-STYLE_PATH = "sample_images/style/starry_night.jpg"
 MODEL_CHECKPOINT = "trained_models/check_point.pth"
 PRESERVE_COLOR = False
 WIDTH = 1280
@@ -77,12 +84,9 @@ def webcam(style_path, width=1280, height=720):
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-            print(content_tensor.shape)
-            print(style_tensor.shape)
-            
             # stylize image
             with torch.no_grad():
-                stylized_tensor =  network(content_tensor, [style_tensor], 0.3, 3, 1,
+                stylized_tensor =  network(content_tensor, [style_tensor], args.ratio, 3, 1,
                         None, None, False)
             stylized_img=ttoi(stylized_tensor.detach())
             stylized_img=stylized_img/255
@@ -107,5 +111,5 @@ def webcam(style_path, width=1280, height=720):
     cam.release()
     cv2.destroyAllWindows()
 
-webcam(STYLE_PATH, WIDTH, HEIGHT)
+webcam(args.style, WIDTH, HEIGHT)
 
