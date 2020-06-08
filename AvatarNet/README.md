@@ -1,19 +1,6 @@
 Avatar-Net: Multi-scale Zero-shot Style Transfer by Feature Decoration
 ---
 
-
-Requirements
---
-* torch (version: 1.2.0)
-* torchvision (version: 0.4.0)
-* Pillow (version: 6.1.0)
-* matplotlib (version: 3.1.1)
-
-Download
---
-* The trained models can be downloaded throuth the [releases](https://github.com/tyui592/Avatar-Net_Pytorch/releases/download/v0.2/check_point.pth).
-* [MSCOCO train2014](http://cocodataset.org/#download) is needed to train the network.
-
 Usage
 --
 
