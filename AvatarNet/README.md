@@ -6,7 +6,7 @@ Usage
 
 ### Webcam
 ```bash
-python webcam.py --style path
+python webcam.py --style path --ratio num
 ```
 
 ### Arguments
