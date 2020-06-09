@@ -6,7 +6,7 @@ Usage
 
 ### Webcam
 ```bash
-python webcam.py
+python webcam.py --style path
 ```
 
 ### Arguments
