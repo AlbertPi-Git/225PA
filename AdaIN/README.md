@@ -8,7 +8,7 @@ Download [vgg_normalized.pth](https://drive.google.com/open?id=108uza-dsmwvbW2zv
 ### Webcam
 
 ```bash
-python webcam.py
+python webcam.py --style path --ratio num
 ```
 
 ### Test
