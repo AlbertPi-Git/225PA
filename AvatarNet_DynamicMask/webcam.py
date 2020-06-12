@@ -33,8 +33,8 @@ STYLE_NET_CHECKPOINT = "trained_models/AvatarNet.pth"
 SEGMENTATION_NET_CHECKPOINT = "trained_models/UNet_ResNet18.pth"
 
 # Expected resolution of output video
-WIDTH = int(1280/4) 
-HEIGHT = int(720/4)
+WIDTH = int(1280/1)
+HEIGHT = int(720/1)
 
 # Normalize the torch image (tensor) since the pretrained weights is trained using normalized input
 def normalize(img):
@@ -134,7 +134,7 @@ with torch.no_grad():
 
         # generate person_mask and background_mask
         # shape of mask image is (H,W) and range is 0 ~ 1
-        person_mask=segmentObj.run(content_img)
+        person_mask=np.round(segmentObj.run(content_img))
         background_mask=1-person_mask
 
         # unsqueeze twice to make form (B,C,H,W) tensor format
@@ -159,7 +159,10 @@ with torch.no_grad():
         factor=0.4*content_img.shape[0]/person_style_img.shape[0]
         resized_style_img = cv2.resize(person_style_img,(0,0),fx=factor,fy=factor, interpolation = cv2.INTER_CUBIC)
         content_img[0:resized_style_img.shape[0],0:resized_style_img.shape[1],:]=resized_style_img
-        output=np.concatenate((content_img/255,stylized_img/255),axis=1)
+        output=np.array(255*np.concatenate((content_img/255,stylized_img/255),axis=1),dtype=np.uint8)
+
+        # cv2.imwrite('webcam.jpg',stylized_img)
+        # cv2.imwrite('webcam_comp.jpg',output)
 
         # Show webcam
         cv2.namedWindow('Demo webcam',cv2.WINDOW_NORMAL)

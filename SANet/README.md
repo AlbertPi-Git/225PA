@@ -16,7 +16,7 @@ Or, you can download the latest release. It contains all weights, codes and exam
 
 # How to evaluate
 
-## Sincle Image
+## Single Image
 
 ```bash
 python Eval.py --content path --style path

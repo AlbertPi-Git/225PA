@@ -28,7 +28,7 @@ def build_parser():
                     help='Number of iteration to check training logs', default=100)
 
     parser.add_argument('--imsize', type=int,
-                    help='Size for resize image during training', default=512)
+                    help='Size for resize image during training', default=640)
 
     parser.add_argument('--cropsize', type=int,
                     help='Size for crop image durning training', default=None)
