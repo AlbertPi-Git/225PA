@@ -24,6 +24,15 @@ parser.add_argument('--ratio', type=float, default=0.5,
                     help='Style strength ratio')
 args= parser.parse_args()
 
+# Expected resolution of output video
+OUT_WIDTH = int(1280/3)
+OUT_HEIGHT = int(720/3)
+
+# Camera resolution
+CAM_WIDTH = 1280
+CAM_HEIGHT = 720
+
+
 # Device
 device = ("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -32,9 +41,13 @@ STYLE_NET_CHECKPOINT = "trained_models/AvatarNet.pth"
 # Path of pretrained weights of UNet for segmentation
 SEGMENTATION_NET_CHECKPOINT = "trained_models/UNet_ResNet18.pth"
 
-# Expected resolution of output video
-WIDTH = int(1280/1)
-HEIGHT = int(720/1)
+def central_square_crop(img):
+    center = (img.shape[0] / 2, img.shape[1] / 2)
+    h=w=min(img.shape[0],img.shape[1])
+    x = center[1] - w/2
+    y = center[0] - h/2
+    crop_img = img[int(y):int(y+h), int(x):int(x+w),:]
+    return crop_img
 
 # Normalize the torch image (tensor) since the pretrained weights is trained using normalized input
 def normalize(img):
@@ -69,10 +82,14 @@ def toImage(tensor):
     tensor=denormalize(tensor)
     # Transpose from [C, H, W] -> [H, W, C]
     img = tensor.cpu().numpy().transpose(1, 2, 0)
-    img =np.array(cv2.cvtColor(img,cv2.COLOR_RGB2BGR)*255,dtype=np.uint8)
+
+    # Shouldn't convert to uint8 since it will cause precision loss
+    img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
+    # img =np.array(cv2.cvtColor(img,cv2.COLOR_RGB2BGR)*255,dtype=np.uint8)
     return img
 
 # Load segmentation net model
+print("Loading Segmentation Network")
 model = UNet(backbone="resnet18", num_classes=2)
 if torch.cuda.is_available():
     trained_dict = torch.load(SEGMENTATION_NET_CHECKPOINT)['state_dict']
@@ -87,13 +104,15 @@ segmentObj = VideoInference(
     model=model,
     video_path=0,
     input_size=320,
-    height=HEIGHT,
-    width=WIDTH,
+    height=OUT_HEIGHT,
+    width=OUT_WIDTH,
     use_cuda=torch.cuda.is_available(),
     draw_mode='matting',
 )
+print("Done Loading Segmentation Network\n")
 
 # Load style transfer net model
+print("Loading Style Transfer Network")
 network = AvatarNet([1, 6, 11, 20])
 if torch.cuda.is_available():
     trained_dict = torch.load(STYLE_NET_CHECKPOINT)['state_dict']
@@ -101,22 +120,23 @@ else:
     trained_dict = torch.load(STYLE_NET_CHECKPOINT,map_location=torch.device('cpu'))['state_dict']
 network.load_state_dict(trained_dict, strict=False)
 network = network.to(device)
+print("Done Loading Style Transfer Network\n")
 
 # Load person style image and convert it to tensor
-person_style_img=cv2.imread(args.person_style)
-person_style_img=cv2.resize(person_style_img,(int(person_style_img.shape[1]/person_style_img.shape[0]*400),400))
+person_style_img=central_square_crop(cv2.imread(args.person_style))
+person_style_img=cv2.resize(person_style_img,(512,512))
 person_style_tensor=toTensor(person_style_img)
 
 # Load background style image and convert it to tensor
-background_style_img=cv2.imread(args.background_style)
-background_style_img=cv2.resize(background_style_img,(int(background_style_img.shape[1]/background_style_img.shape[0]*400),400))
+background_style_img=central_square_crop(cv2.imread(args.background_style))
+background_style_img=cv2.resize(background_style_img,(512,512))
 background_style_tensor=toTensor(background_style_img)
 
 
 # Set webcam settings
 cam = cv2.VideoCapture(0)
-cam.set(3, 1280)
-cam.set(4, 720)     ## !!Minimum width OpenCV can set for camera is 480, size smaller than 480 won't have effect
+cam.set(3, CAM_WIDTH)
+cam.set(4, CAM_HEIGHT)     ## !!Minimum OUT_WIDTH OpenCV can set for camera is 480, size smaller than 480 won't have effect
 
 
 ####################################### Main loop ########################################
@@ -129,7 +149,7 @@ with torch.no_grad():
 
         # Mirror and resize video frame to exprected size
         content_img = cv2.flip(content_img, 1)
-        content_img = cv2.resize(content_img,(WIDTH,HEIGHT),interpolation=cv2.INTER_CUBIC)
+        content_img = cv2.resize(content_img,(OUT_WIDTH,OUT_HEIGHT),interpolation=cv2.INTER_CUBIC)
         content_tensor=toTensor(content_img)
 
         # generate person_mask and background_mask
@@ -153,20 +173,19 @@ with torch.no_grad():
                     [person_mask_tensor,background_mask_tensor], None, False)
         
         stylized_img=toImage(stylized_tensor.detach())
-        stylized_img = cv2.resize(stylized_img,(WIDTH,HEIGHT),interpolation=cv2.INTER_CUBIC)
+        stylized_img = cv2.resize(stylized_img,(OUT_WIDTH,OUT_HEIGHT),interpolation=cv2.INTER_CUBIC)
         
         # concatenate original image and stylized image
-        factor=0.4*content_img.shape[0]/person_style_img.shape[0]
-        resized_style_img = cv2.resize(person_style_img,(0,0),fx=factor,fy=factor, interpolation = cv2.INTER_CUBIC)
-        content_img[0:resized_style_img.shape[0],0:resized_style_img.shape[1],:]=resized_style_img
-        output=np.array(255*np.concatenate((content_img/255,stylized_img/255),axis=1),dtype=np.uint8)
+        factor=0.5*content_img.shape[0]/person_style_img.shape[0]
+        resized_person_style_img = cv2.resize(person_style_img,(0,0),fx=factor,fy=factor, interpolation = cv2.INTER_CUBIC)
+        resized_background_style_img = cv2.resize(background_style_img,(0,0),fx=factor,fy=factor, interpolation = cv2.INTER_CUBIC)
+        resized_style_img=np.vstack([resized_person_style_img,resized_background_style_img])
+        output=np.array(255*np.concatenate((resized_style_img/255,content_img/255,stylized_img),axis=1),dtype=np.uint8)
 
-        # cv2.imwrite('webcam.jpg',stylized_img)
-        # cv2.imwrite('webcam_comp.jpg',output)
 
         # Show webcam
         cv2.namedWindow('Demo webcam',cv2.WINDOW_NORMAL)
-        cv2.resizeWindow('Demo webcam',WIDTH,int(0.5*HEIGHT))
+        cv2.resizeWindow('Demo webcam',int(0.5*OUT_HEIGHT+OUT_WIDTH),int(0.5*OUT_HEIGHT))
         cv2.imshow('Demo webcam', output)
         if cv2.waitKey(1) == 27: 
             break  # esc to quit
