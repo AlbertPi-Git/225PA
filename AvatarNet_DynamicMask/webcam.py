@@ -180,8 +180,10 @@ with torch.no_grad():
         resized_person_style_img = cv2.resize(person_style_img,(0,0),fx=factor,fy=factor, interpolation = cv2.INTER_CUBIC)
         resized_background_style_img = cv2.resize(background_style_img,(0,0),fx=factor,fy=factor, interpolation = cv2.INTER_CUBIC)
         resized_style_img=np.vstack([resized_person_style_img,resized_background_style_img])
-        output=np.array(255*np.concatenate((resized_style_img/255,content_img/255,stylized_img),axis=1),dtype=np.uint8)
 
+        # Don't convert to uint8 or there may be some display problem due to precision loss
+        # output=np.array(255*np.concatenate((resized_style_img/255,content_img/255,stylized_img),axis=1),dtype=np.uint8)
+        output=np.concatenate((resized_style_img/255,content_img/255,stylized_img),axis=1)
 
         # Show webcam
         cv2.namedWindow('Demo webcam',cv2.WINDOW_NORMAL)
